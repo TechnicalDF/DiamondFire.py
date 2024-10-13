@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "DiamondFire.py"
+version = "0.0.1"
+dependencies = [
+    "amulet-nbt",
+    "websockets"
+]
+license = { file = "LICENSE" }
+keywords = [ "DiamondFire" ]
+authors = [
+  { name="HellishBro" }
+]
+description = "DiamondFire templating library in Python."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/TechnicalDF/DiamondFire.py"
+Issues = "https://github.com/TechnicalDF/DiamondFire.py/issues"
