@@ -4,10 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "DiamondFire.py"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
     "amulet-nbt",
-    "websockets"
+    "websockets",
+    "setuptools"
 ]
 license = { file = "LICENSE" }
 keywords = [ "DiamondFire" ]

@@ -1,6 +1,6 @@
 from .enums import CodeBlockCategory, Selection, get_from_value
 from .exceptions import MalformedCodeBlockJSONError
-from .values import Item, BlockTag, Number, String
+from .values import ItemValue, BlockTag, Number, String
 
 class Block:
     """
@@ -66,7 +66,7 @@ class CodeBlock(Block):
     """
     Represents a Code Block.
     """
-    def __init__(self, category: CodeBlockCategory, action: str = "", args: list[Item] = None, selection: Selection = Selection.AUTO, **kwargs):
+    def __init__(self, category: CodeBlockCategory, action: str = "", args: list[ItemValue] = None, selection: Selection = Selection.AUTO, **kwargs):
         """
         Initialize and creates a Code Block.
 
@@ -151,7 +151,7 @@ class CodeBlock(Block):
         block = get_from_value(CodeBlockCategory, json["block"])
         action = json.get("action", "")
         target = get_from_value(Selection, json.get("target", ""))
-        args = [Item.from_json(item) for item in json.get("args", {"items": []})["items"]]
+        args = [ItemValue.from_json(item) for item in json.get("args", {"items": []})["items"]]
         code = cls(block, action, args, target)
         for k, v in json:
             if k not in ("block", "action", "target", "args"):

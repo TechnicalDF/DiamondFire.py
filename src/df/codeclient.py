@@ -64,7 +64,7 @@ class CodeClient:
         def __init__(self, item: str | CompoundTag):
             """
             Sends an item (SNBT) to Minecraft.
-            :param item: The Item in SNBT or a Compound NBT Tag.
+            :param item: The ItemValue in SNBT or a Compound NBT Tag.
             :raises SendToMinecraftError: If the player is not in creative mode.
             """
             if isinstance(item, CompoundTag):

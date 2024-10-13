@@ -1,9 +1,10 @@
 from .exceptions import MalformedItemJSONError
 from .enums import VariableScope, Selection, DataType, get_from_value
+from amulet_nbt import CompoundTag, from_snbt
 
-class Item:
+class ItemValue:
     """
-    Base Item class. You shouldn't use this.
+    Base ItemValue class. You shouldn't use this.
     """
     def __init__(self, id: str, slot: int = -1):
         self.id = id
@@ -14,7 +15,7 @@ class Item:
 
     def to_json(self, index: int = 0) -> dict:
         """
-        Serialize the Item into JSON.
+        Serialize the ItemValue into JSON.
         :return: The serialized JSON.
         """
         return {
@@ -26,11 +27,11 @@ class Item:
         }
 
     @classmethod
-    def from_json(cls, json: dict) -> 'Item':
+    def from_json(cls, json: dict) -> 'ItemValue':
         """
-        Deserializes a JSON back into an Item.
+        Deserializes a JSON back into an ItemValue.
         :param json: The JSON object.
-        :return: The Item object.
+        :return: The ItemValue object.
         """
         if "slot" not in json:
             raise MalformedItemJSONError("No 'slot' key present.")
@@ -59,13 +60,14 @@ class Item:
             "part": Particle,
             "pot": Potion,
             "pn_el": Parameter, # AKA Pattern Element
-            "bl_tag": BlockTag
+            "bl_tag": BlockTag,
+            "item": Item # Actual Minecraft item
         }
         if json["item"]["id"] in class_lookup:
             return class_lookup[json["item"]["id"]].from_json(json["item"]["data"], json["slot"])
         raise MalformedItemJSONError("Unexpected value for 'item.id'.")
 
-class String(Item):
+class String(ItemValue):
     """
     A String value.
     """
@@ -80,7 +82,7 @@ class String(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'String':
         return cls(json["name"], slot)
 
-class Text(Item):
+class Text(ItemValue):
     """
     A Styled Text value.
     """
@@ -95,7 +97,7 @@ class Text(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'Text':
         return cls(json["name"], slot)
 
-class Number(Item):
+class Number(ItemValue):
     """
     A Number value.
     """
@@ -110,7 +112,7 @@ class Number(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'Number':
         return cls(json["name"], slot)
 
-class Location(Item):
+class Location(ItemValue):
     """
     A Location value.
     """
@@ -138,7 +140,7 @@ class Location(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'Location':
         return cls(json["loc"]["x"], json["loc"]["y"], json["loc"]["z"], json["loc"]["pitch"], json["loc"]["yaw"], slot)
 
-class Vector(Item):
+class Vector(ItemValue):
     """
     A Vector value.
     """
@@ -159,7 +161,7 @@ class Vector(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'Vector':
         return cls(json["x"], json["y"], json["z"], slot)
 
-class Sound(Item):
+class Sound(ItemValue):
     """
     A Sound value. It may be a custom resourcepack sound.
     """
@@ -236,7 +238,7 @@ class ParticleData:
             material=json["material"].lower(), roll=json["roll"]
         )
 
-class Particle(Item):
+class Particle(ItemValue):
     """
     A Particle value. This is by far the most complex value type. Use ``ParticleData`` also for more complex particle creation.
     """
@@ -262,7 +264,7 @@ class Particle(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'Particle':
         return Particle(json["particle"], (float(json["cluster"]["horizontal"]), float(json["cluster"]["vertical"])), json["cluster"]["amount"], ParticleData.from_json(json["data"]), slot)
 
-class Potion(Item):
+class Potion(ItemValue):
     """
     A Potion value.
     """
@@ -279,7 +281,7 @@ class Potion(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'Potion':
         return cls(json["pot"], -1 if json["dur"] == 1000000 else json["dur"], json["amp"] + 1, slot)
 
-class Variable(Item):
+class Variable(ItemValue):
     """
     A Variable value.
     """
@@ -295,7 +297,7 @@ class Variable(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'Variable':
         return cls(json["name"], get_from_value(VariableScope, json["scope"]), slot)
 
-class GameValue(Item):
+class GameValue(ItemValue):
     """
     A Game Value item.
     """
@@ -311,11 +313,11 @@ class GameValue(Item):
     def from_json(cls, json: dict, slot: int = -1) -> 'GameValue':
         return cls(json["type"], get_from_value(Selection, json["target"]), slot)
 
-class Parameter(Item):
+class Parameter(ItemValue):
     """
     A Pattern Element (AKA Parameter) value. This is the 2nd most complex value.
     """
-    def __init__(self, name: str, type: DataType, plural: bool = False, default: Item = None, description: str = None, note: str = None, slot: int = -1):
+    def __init__(self, name: str, type: DataType, plural: bool = False, default: ItemValue = None, description: str = None, note: str = None, slot: int = -1):
         super().__init__("pn_el", slot)
         self.name = name
         self.type = type
@@ -342,11 +344,14 @@ class Parameter(Item):
 
     @classmethod
     def from_json(cls, json: dict, slot: int = -1) -> 'Parameter':
-        return cls(json["name"], get_from_value(DataType, json["type"]), json["plural"], None if not json["optional"] else Item.from_json({"item": json["default_value"], "slot": -1}), json.get("description"), json.get("note"), slot)
+        return cls(json["name"], get_from_value(DataType, json["type"]), json["plural"], None if not json["optional"] else ItemValue.from_json({"item": json["default_value"], "slot": -1}), json.get("description"), json.get("note"), slot)
 
-class BlockTag(Item):
-    def __init__(self, tag: str, option: str, slot: int = -1):
-        super().__init__("bl_tag", slot)
+class BlockTag(ItemValue):
+    """
+    A BlockTag meta-value.
+    """
+    def __init__(self, tag: str, option: str):
+        super().__init__("bl_tag", 0)
         self.tag = tag
         self.option = option
 
@@ -355,4 +360,19 @@ class BlockTag(Item):
 
     @classmethod
     def from_json(cls, json: dict, slot: int = -1) -> 'BlockTag':
-        return cls(json["tag"], json["option"], slot)
+        return cls(json["tag"], json["option"])
+
+class Item(ItemValue):
+    """
+    A Minecraft item.
+    """
+    def __init__(self, item: CompoundTag, slot: int = -1):
+        super().__init__("item", slot)
+        self.item = item
+
+    def _getdata(self) -> dict:
+        return {"item": self.item.to_snbt()}
+
+    @classmethod
+    def from_json(cls, json: dict, slot: int = -1) -> 'Item':
+        return cls(from_snbt(json["item"]), slot)
