@@ -18,6 +18,17 @@ class CCAuthScopes(Flag):
 class CodeClient:
     """
     API to interact with CodeClient.
+
+    Each method have a ``.scope`` attribute. You can use this to check for the scope the method requires.
+    Example::
+
+        codeclient = CodeClient()
+        can_get_inv = codeclient.inv.scope
+        if codeclient.have_scope(can_get_inv):
+            codeclient.inv.set([])
+
+        codeclient.close()
+
     """
     def __init__(self, timeout: int = 0.1):
         """
@@ -28,6 +39,14 @@ class CodeClient:
         self.timeout = timeout
         self._scopes = CCAuthScopes.DEFAULT
         self.__method._api = self
+
+    def have_scope(self, scope: CCAuthScopes) -> bool:
+        """
+        Checks if the current session have the scope.
+        :param scope: The scope to check for.
+        :return: Whether the scope is authorized or not.
+        """
+        return scope in self._scopes
 
     def __del__(self):
         self.socket.close()
