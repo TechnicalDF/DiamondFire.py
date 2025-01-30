@@ -217,7 +217,7 @@ class CodeClient:
             self._require_scope()
 
             parsed = []
-            for item in parsed:
+            for item in items:
                 if isinstance(item, CompoundTag):
                     item = item.to_snbt()
                 parsed.append(item)
